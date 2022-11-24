@@ -4,3 +4,4 @@ target/
 .env
 RoomList
 .ipynb_checkpoints/
+.ipynb
