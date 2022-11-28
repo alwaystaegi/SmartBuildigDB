@@ -1,7 +1,7 @@
 
 import glob
 import sched
-import datetime
+from datetime import datetime
 import csv
 import os
 import pandas as pd
@@ -49,11 +49,12 @@ def job():
     for folder in folders:
         # 새로운 폴더인지 아닌지 확인하여 새로운 폴더일 경우 안에 있는 파일을 읽어옴,안에 있는 새로운 csv 파일들까지 다 확인하기에는 조금 어려울것같다.
         if folder not in recentfolders:
-            print("새로운 방 : ",folder)
+            
             recentfolders.append(folder)
             csvfiles=[file for file in os.listdir(folder) if file.endswith('csv')]
             df= None
             roomname=folder.replace("/Users/user/Desktop/project/SmartBuildingDB/RoomList\\","")
+            print("새로운 방 : ",roomname)
             roomlist.append(roomname)
 
             for i in csvfiles:
@@ -88,23 +89,28 @@ def job():
             df = df.astype(object).where(pd.notnull(df), None)
             #방 이름을 데이터프레임 인덱스로 지정
             df.index=[roomname for i in range(len(df.index))]
-
+            print(df)
             roomdatas.append(df)
 
-        #roomdata에 있는 값들을 tuple값으로 바꿔서 반환시키기.  
+
+        #roomdata에 있는 값들을 tuple형식으로 바꿔서 반환시키기.  
     def loaddata(data):
+
         value=data.iloc[countnow]
+
         if countnow%2==0:
-            return (str(value.name),int(value['ctime']),int(value['co2']),int(value['htime']),float(value['humidity']),int(value['ltime']),int(value['light']),int(data.iloc[int(countnow/2)]['ptime']),int(data.iloc[int(countnow/2)]['pir']),int(value['ttime']),float(value['temperature']))
+            return (str(value.name),(datetime.fromtimestamp(int(value['ctime']))).strftime('%Y-%m-%d %H:%M:%S'),int(value['co2']),(datetime.fromtimestamp(int(value['htime']))).strftime('%Y-%m-%d %H:%M:%S'),float(value['humidity']),(datetime.fromtimestamp(int(value['ltime']))).strftime('%Y-%m-%d %H:%M:%S'),int(value['light']),(datetime.fromtimestamp(int(data.iloc[int(countnow/2)]['ptime']))).strftime('%Y-%m-%d %H:%M:%S'),int(data.iloc[int(countnow/2)]['pir']),(datetime.fromtimestamp(int(value['ttime']))).strftime('%Y-%m-%d %H:%M:%S'),float(value['temperature']))
         else:
-            return (str(value.name),int(value['ctime']),int(value['co2']),int(value['htime']),float(value['humidity']),int(value['ltime']),int(value['light']),int(value['ttime']),float(value['temperature']))
+           return (str(value.name),(datetime.fromtimestamp(int(value['ctime']))).strftime('%Y-%m-%d %H:%M:%S'),int(value['co2']),(datetime.fromtimestamp(int(value['htime']))).strftime('%Y-%m-%d %H:%M:%S'),float(value['humidity']),(datetime.fromtimestamp(int(value['ltime']))).strftime('%Y-%m-%d %H:%M:%S'),int(value['light']),(datetime.fromtimestamp(int(value['ttime']))).strftime('%Y-%m-%d %H:%M:%S'),float(value['temperature']))
 
     #우선은 pir 값이 다른 센서에 비해 2배 적기 때문에 현재 count값에 따라 sql을 달리함
     if countnow%2==0:
-        sql='INSERT INTO roomdata (Room,ctime,co2,htime,humidity,ltime,light,ptime,pir,ttime,temperature) values ("%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s")'
+        sql='INSERT INTO roomdata (Room,ctime,co2,htime,humidity,ltime,light,ptime,pir,ttime,temperature) values (%s,%s,"%s",%s,"%s",%s,"%s",%s,"%s",%s,"%s")'
     else:
-        sql='INSERT INTO roomdata (Room,ctime,co2,htime,humidity,ltime,light,ttime,temperature) values ("%s","%s","%s","%s","%s","%s","%s","%s","%s")'
+        sql='INSERT INTO roomdata (Room,ctime,co2,htime,humidity,ltime,light,ttime,temperature) values (%s,%s,"%s",%s,"%s",%s,"%s",%s,"%s")'
+
     # DB에 sql문을 내보내는 함수, excutemany로 하여 모든 방의 countnow번째 데이터를 INSERT한다.
+  
     cur.executemany(sql,[loaddata(t) for t in roomdatas])
     print(cur.rowcount,"만큼 입력됨")
     conn.commit()	# 저장
