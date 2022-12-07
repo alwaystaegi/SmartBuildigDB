@@ -40,6 +40,29 @@ roomlist=[]
 roomdatas=[]
 
 
+
+#-------------------------------------------------------------------상태 인식------------------------------------------------------------------------------------
+def checkstate(data):
+    problem=""
+    
+    #co2 상태 체크하기
+    if int(data['co2'])>=1000 and int(data['co2'])<1500:
+        problem=problem+" co2Warning"
+    elif int(data['co2'])>=1500:
+        problem=problem+" co2Danger"
+
+    
+    #온도 체크하기
+
+    
+    #습도 체크하기
+
+
+
+
+
+
+
 countnow=0
 #scheduler에 사용할 함수. 매 1초마다 작동(이미 정해져있는 데이터이고,시간값도 파일에 있는 데이터를 가져오기 때문에 시간을 짧게 함, 만약 실제 센서를 이용한다면 5초~10초 사용하기)
 def job():
@@ -93,9 +116,9 @@ def job():
             roomdatas.append(df)
 
 
-        #roomdata에 있는 값들을 tuple형식으로 바꿔서 반환시키기.  
+    #roomdata에 있는 값들을 tuple형식으로 바꿔서 반환시키기.  
     def loaddata(data):
-
+        #dataframe.iloc[int] int번째 행을 선택 
         value=data.iloc[countnow]
 
         if countnow%2==0:
@@ -110,8 +133,10 @@ def job():
         sql='INSERT INTO roomdata (Room,ctime,co2,htime,humidity,ltime,light,ttime,temperature) values (%s,%s,"%s",%s,"%s",%s,"%s",%s,"%s")'
 
     # DB에 sql문을 내보내는 함수, excutemany로 하여 모든 방의 countnow번째 데이터를 INSERT한다.
-  
-    cur.executemany(sql,[loaddata(t) for t in roomdatas])
+
+    for data in roomdatas:
+        checkstate(data.iloc[countnow])
+    cur.executemany(sql,[loaddata(data) for data in roomdatas])
     print(cur.rowcount,"만큼 입력됨")
     conn.commit()	# 저장
     countnow=countnow+1;    
